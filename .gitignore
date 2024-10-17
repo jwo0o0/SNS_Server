@@ -2,3 +2,4 @@
 .env
 logger.js
 error.js
+certbot
