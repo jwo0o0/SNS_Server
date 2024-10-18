@@ -6,6 +6,7 @@ const nunjucks = require("nunjucks");
 const dotenv = require("dotenv");
 const passport = require("passport");
 const logger = require("./logger");
+const cors = require("cors");
 dotenv.config();
 
 const indexRouter = require("./routes");
@@ -44,6 +45,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(passport.initialize());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
 app.use("/auth", authRouter);
 app.use("/image", imageRouter);
