@@ -1,13 +1,13 @@
 const express = require("express");
 const passport = require("passport");
 
-const { isLoggedIn, isNotLoggedIn } = require("../middlewares");
-const { join, login, logout } = require("../controllers/authController");
+const { handleUploadProfileImage } = require("../middlewares/imageMiddleware");
+const { join, login } = require("../controllers/authController");
 
 const router = express.Router();
 
 // 회원가입 POST /auth/join
-router.post("/join", join);
+router.post("/join", handleUploadProfileImage, join);
 
 // 로그인 POST /auth/login
 router.post("/login", login);

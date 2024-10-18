@@ -3,8 +3,8 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
 exports.join = async (req, res, next) => {
-  const { email, nickname, password, bio, profileImage } = req.body;
   try {
+    const { email, nickname, password, bio } = req.body;
     const exUser = await User.findOne({ where: { email } });
     if (exUser) {
       return res.status(400).json({ message: "이미 사용 중인 이메일입니다." });
@@ -18,7 +18,6 @@ exports.join = async (req, res, next) => {
       nickname,
       password: hash,
       bio,
-      profileImage,
     });
     // JWT 토큰 발급
     const token = jwt.sign(
@@ -61,7 +60,7 @@ exports.login = async (req, res, next) => {
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
       {
-        expiresIn: "1h",
+        expiresIn: "24h",
       }
     );
 

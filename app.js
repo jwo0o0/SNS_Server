@@ -10,6 +10,7 @@ dotenv.config();
 
 const indexRouter = require("./routes");
 const authRouter = require("./routes/auth");
+const imageRouter = require("./routes/image");
 
 const { sequelize } = require("./models");
 const passportConfig = require("./passport");
@@ -45,6 +46,7 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(passport.initialize());
 
 app.use("/auth", authRouter);
+app.use("/image", imageRouter);
 app.use("/", indexRouter);
 
 app.use((req, res, next) => {
