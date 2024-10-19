@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-exports.join = async (req, res, next) => {
+exports.signup = async (req, res, next) => {
   try {
     const { email, nickname, password, bio } = req.body;
     const exUser = await User.findOne({ where: { email } });
@@ -26,8 +26,15 @@ exports.join = async (req, res, next) => {
         email: user,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
+    // 토큰을 쿠키에 저장
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
+      maxAge: 60 * 60 * 1000 * 24,
+    });
     return res.status(201).json({
       message: "회원가입 성공",
       token,
@@ -63,7 +70,13 @@ exports.login = async (req, res, next) => {
         expiresIn: "24h",
       }
     );
-
+    // 토큰을 쿠키에 저장
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
+      maxAge: 60 * 60 * 1000 * 24,
+    });
     return res.status(200).json({
       message: "로그인 성공",
       token,
@@ -77,4 +90,13 @@ exports.login = async (req, res, next) => {
     console.error(error);
     return next(error);
   }
+};
+
+exports.logout = (req, res) => {
+  res.clearCookie("token", {
+    http: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "none",
+  });
+  return res.status(200).json({ message: "로그아웃 성공" });
 };

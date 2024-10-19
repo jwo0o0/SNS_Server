@@ -6,6 +6,7 @@ const nunjucks = require("nunjucks");
 const dotenv = require("dotenv");
 const passport = require("passport");
 const logger = require("./logger");
+const cors = require("cors");
 dotenv.config();
 
 const indexRouter = require("./routes");
@@ -38,11 +39,17 @@ if (process.env.NODE_ENV === "production") {
   app.use(morgan("dev"));
 }
 
+app.use(
+  cors({
+    origin: ["http://localhost:3000"], // 클라이언트 도메인을 정확히 지정
+    credentials: true, // 자격 증명 허용
+  })
+);
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/img", express.static(path.join(__dirname, "uploads")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(cookieParser());
 app.use(passport.initialize());
 
 app.use("/auth", authRouter);
