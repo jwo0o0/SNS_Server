@@ -60,6 +60,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(passport.initialize());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
 app.use("/auth", authRouter);
 app.use("/image", imageRouter);
