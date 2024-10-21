@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const passport = require("passport");
 const logger = require("./logger");
 const cors = require("cors");
+const { redisClient } = require("./config/redis");
 dotenv.config();
 
 const indexRouter = require("./routes");
@@ -32,6 +33,14 @@ sequelize
   .catch((err) => {
     console.error(err);
   });
+
+redisClient.connect();
+redisClient.on("ready", () => {
+  console.log("redis ready");
+});
+redisClient.on("error", (error) => {
+  console.error(error);
+});
 
 if (process.env.NODE_ENV === "production") {
   app.use(morgan("combined"));

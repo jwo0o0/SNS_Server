@@ -41,7 +41,7 @@ const handleUploadProfileImage = (req, res, next) => {
   uploadProfileImage(req, res, (err) => {
     if (err) {
       // 파일 업로드 중 에러 발생
-      return res.status(400).json({ message: "파일 업로드 실패" });
+      return res.status(400).json({ message: "FILE_UPLOAD_FAIL" });
     }
     if (req.file) {
       req.profileImage = req.file.location;

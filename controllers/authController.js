@@ -1,17 +1,17 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { redisClient } = require("../config/redis");
 const User = require("../models/user");
+const { issueAccessToken, issueRefreshToken } = require("../utils/authUtils");
 
 exports.signup = async (req, res, next) => {
   try {
     const { email, nickname, password, bio } = req.body;
     const exUser = await User.findOne({ where: { email } });
     if (exUser) {
-      return res.status(400).json({ message: "이미 사용 중인 이메일입니다." });
+      return res.status(400).json({ message: "EMAIL_ALREADY_IN_USE" });
     }
-    // 비밀번호 해싱
     const hash = await bcrypt.hash(password, 12);
-
     // 새로운 유저
     const user = await User.create({
       email,
@@ -19,25 +19,22 @@ exports.signup = async (req, res, next) => {
       password: hash,
       bio,
     });
-    // JWT 토큰 발급
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
-    // 토큰을 쿠키에 저장
-    res.cookie("token", token, {
+    // accessToken 발급
+    const accessToken = issueAccessToken({ id: user.id, email: user.email });
+    // accessToken 토큰 쿠키에 저장
+    res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
       maxAge: 60 * 60 * 1000 * 24,
     });
+    // refreshToken 발급
+    const refreshToken = issueRefreshToken();
+    // refreshToken redis에 저장
+    await redisClient.set(String(user.id), refreshToken);
+    // 회원가입 성공
     return res.status(201).json({
-      message: "회원가입 성공",
-      token,
+      message: "SIGNUP_SUCCESS",
       user: {
         id: user.id,
         email: user.email,
@@ -52,34 +49,31 @@ exports.signup = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   try {
+    // 이메일, 비밀번호 확인
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email, provider: "local" } });
     if (!user) {
-      return res.status(400).json({ message: "등록된 이메일이 아닙니다." });
+      return res.status(409).json({ message: "USER_NOT_FOUND" });
     }
-
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(400).json({ message: "비밀번호가 일치하지 않습니다." });
+      return res.status(400).json({ message: "PASSWORD_NOT_MATCH" });
     }
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
-    // 토큰을 쿠키에 저장
-    res.cookie("token", token, {
+    // accessToken 발급
+    const accessToken = issueAccessToken({ id: user.id, email: user.email });
+    // accessToken 토큰 쿠키에 저장
+    res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
       maxAge: 60 * 60 * 1000 * 24,
     });
+    // refreshToken 발급
+    const refreshToken = issueRefreshToken();
+    // refreshToken redis에 저장
+    await redisClient.set(String(user.id), refreshToken);
     return res.status(200).json({
-      message: "로그인 성공",
-      token,
+      message: "LOGIN_SUCCESS",
       user: {
         id: user.id,
         email: user.email,
@@ -93,10 +87,45 @@ exports.login = async (req, res, next) => {
 };
 
 exports.logout = (req, res) => {
-  res.clearCookie("token", {
+  const { id } = req.body;
+  res.clearCookie("accessToken", {
     http: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "strict" : "none",
   });
-  return res.status(200).json({ message: "로그아웃 성공" });
+  redisClient.del(id);
+  return res.status(200).json({ message: "LOGOUT_SUCCESS" });
+};
+
+// accessToken 재발급
+exports.reissueAccessToken = async (req, res, next) => {
+  const accessToken = req.cookies.accessToken;
+  if (!accessToken) {
+    return res.status(401).json({ message: "NO_ACCESS_TOKEN" });
+  }
+  const decoded = jwt.decode(accessToken);
+  if (document === null) {
+    res.status(401).jwon({ message: "NOT_AUTHORIZED" });
+  }
+  const userId = decoded.id;
+  // refreshToken 만료되었는지 검증
+  const refreshToken = await redisClient.get(userId);
+  try {
+    jwt.verify(refreshToken, process.env.JWT_SECRET);
+  } catch (error) {
+    // refreshToken 만료 -> 로그아웃
+    return res.status(401).json({ message: "REFRESH_TOKEN_EXPIRED" });
+  }
+  // 새로운 accessToken 발급
+  const newAccessToken = issueAccessToken({
+    id: decoded.id,
+    email: decoded.email,
+  });
+  res.cookie("accessToken", newAccessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
+    maxAge: 60 * 60 * 1000 * 24,
+  });
+  return res.status(200).json({ message: "REISSUE_ACCESS_TOKEN_SUCCESS" });
 };
