@@ -2,15 +2,26 @@ const express = require("express");
 const passport = require("passport");
 
 const { handleUploadProfileImage } = require("../middlewares/imageMiddleware");
-const { join, login } = require("../controllers/authController");
+const {
+  signup,
+  login,
+  logout,
+  reissueAccessToken,
+} = require("../controllers/authController");
 
 const router = express.Router();
 
-// 회원가입 POST /auth/join
-router.post("/join", handleUploadProfileImage, join);
+// 회원가입 POST /auth/signup
+router.post("/signup", signup);
 
 // 로그인 POST /auth/login
 router.post("/login", login);
+
+// 로그아웃 POST /auth/logout
+router.post("/logout", logout);
+
+// accessToken 재발급 /refresh
+router.post("/refresh", reissueAccessToken);
 
 // 카카오 로그인 POST /auth/kakao
 router.get("/kakao", passport.authenticate("kakao"));
@@ -34,28 +45,5 @@ router.get(
     });
   }
 );
-
-// // POST /auth/join
-// router.post("/join", isNotLoggedIn, join);
-
-// // POST /auth/login
-// router.post("/login", isNotLoggedIn, login);
-
-// // GET /auth/logout
-// router.get("/logout", isLoggedIn, logout);
-
-// // GET /auth/kakao
-// router.get("/kakao", passport.authenticate("kakao"));
-
-// // GET /auth/kakao/callback
-// router.get(
-//   "/kakao/callback",
-//   passport.authenticate("kakao", {
-//     failureRedirect: "/?error=카카오로그인 실패",
-//   }),
-//   (req, res) => {
-//     res.redirect("/"); // 성공 시에는 /로 이동
-//   }
-// );
 
 module.exports = router;

@@ -22,7 +22,7 @@ module.exports = () => {
             const token = jwt.sign(
               { id: exUser.id, email: exUser.email },
               process.env.JWT_SECRET,
-              { expiresIn: "1h" }
+              { expiresIn: "24h" }
             );
             return done(null, { user: exUser, token }); // JWT 토큰과 함께 반환
           } else {

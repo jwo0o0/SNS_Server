@@ -1,5 +1,6 @@
 /node_modules
 .env
 logger.js
-error.js
 certbot
+combined.log
+error.log

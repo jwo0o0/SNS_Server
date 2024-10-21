@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const passport = require("passport");
 const logger = require("./logger");
 const cors = require("cors");
+const { redisClient } = require("./config/redis");
 dotenv.config();
 
 const indexRouter = require("./routes");
@@ -33,17 +34,31 @@ sequelize
     console.error(err);
   });
 
+redisClient.connect();
+redisClient.on("ready", () => {
+  console.log("redis ready");
+});
+redisClient.on("error", (error) => {
+  console.error(error);
+});
+
 if (process.env.NODE_ENV === "production") {
   app.use(morgan("combined"));
 } else {
   app.use(morgan("dev"));
 }
 
+app.use(
+  cors({
+    origin: ["http://localhost:3000"], // 클라이언트 도메인을 정확히 지정
+    credentials: true, // 자격 증명 허용
+  })
+);
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/img", express.static(path.join(__dirname, "uploads")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(cookieParser());
 app.use(passport.initialize());
 app.use(
   cors({
