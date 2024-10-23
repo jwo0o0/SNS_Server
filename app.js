@@ -50,7 +50,7 @@ if (process.env.NODE_ENV === "production") {
 
 app.use(
   cors({
-    origin: ["http://localhost:3000"], // 클라이언트 도메인을 정확히 지정
+    origin: ["http://localhost:3000", "https://sns.jwoo.site"], // 클라이언트 도메인을 정확히 지정
     credentials: true, // 자격 증명 허용
   })
 );
