@@ -26,7 +26,6 @@ exports.signup = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
-      maxAge: 60 * 60 * 1000 * 24,
     });
     // refreshToken 발급
     const refreshToken = issueRefreshToken();
@@ -66,7 +65,6 @@ exports.login = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
-      maxAge: 60 * 60 * 1000 * 24,
     });
     // refreshToken 발급
     const refreshToken = issueRefreshToken();
@@ -93,7 +91,7 @@ exports.logout = (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "strict" : "none",
   });
-  redisClient.del(id);
+  redisClient.del(String(id));
   return res.status(200).json({ message: "LOGOUT_SUCCESS" });
 };
 
@@ -105,15 +103,16 @@ exports.reissueAccessToken = async (req, res, next) => {
   }
   const decoded = jwt.decode(accessToken);
   if (document === null) {
-    res.status(401).jwon({ message: "NOT_AUTHORIZED" });
+    res.status(401).json({ message: "NOT_AUTHORIZED" });
   }
   const userId = decoded.id;
   // refreshToken 만료되었는지 검증
-  const refreshToken = await redisClient.get(userId);
+  const refreshToken = await redisClient.get(String(userId));
   try {
     jwt.verify(refreshToken, process.env.JWT_SECRET);
   } catch (error) {
     // refreshToken 만료 -> 로그아웃
+    res.clearCookie("accessToken");
     return res.status(401).json({ message: "REFRESH_TOKEN_EXPIRED" });
   }
   // 새로운 accessToken 발급
@@ -125,7 +124,6 @@ exports.reissueAccessToken = async (req, res, next) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
     sameSite: process.env.NODE_ENV === "production" ? "strict" : "none", // 크로스 사이트 요청에서 쿠키 전송 방지
-    maxAge: 60 * 60 * 1000 * 24,
   });
   return res.status(200).json({ message: "REISSUE_ACCESS_TOKEN_SUCCESS" });
 };

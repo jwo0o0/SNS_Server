@@ -5,7 +5,7 @@ const path = require("path");
 const nunjucks = require("nunjucks");
 const dotenv = require("dotenv");
 const passport = require("passport");
-const logger = require("./logger");
+//const logger = require("./logger");
 const cors = require("cors");
 const { redisClient } = require("./config/redis");
 dotenv.config();
@@ -60,11 +60,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(passport.initialize());
-app.use(
-  cors({
-    origin: "*",
-  })
-);
 
 app.use("/auth", authRouter);
 app.use("/image", imageRouter);
