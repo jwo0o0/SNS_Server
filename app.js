@@ -5,7 +5,7 @@ const path = require("path");
 const nunjucks = require("nunjucks");
 const dotenv = require("dotenv");
 const passport = require("passport");
-//const logger = require("./logger");
+const logger = require("./logger");
 const cors = require("cors");
 const { redisClient } = require("./config/redis");
 dotenv.config();
@@ -13,6 +13,7 @@ dotenv.config();
 const indexRouter = require("./routes");
 const authRouter = require("./routes/auth");
 const imageRouter = require("./routes/image");
+const userRouter = require("./routes/user");
 
 const { sequelize } = require("./models");
 const passportConfig = require("./passport");
@@ -63,6 +64,7 @@ app.use(passport.initialize());
 
 app.use("/auth", authRouter);
 app.use("/image", imageRouter);
+app.use("/user", userRouter);
 app.use("/", indexRouter);
 
 app.use((req, res, next) => {

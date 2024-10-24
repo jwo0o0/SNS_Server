@@ -1,8 +1,8 @@
 const Sequelize = require("sequelize");
 
-class User extends Sequelize.Model {
+class Users extends Sequelize.Model {
   static initiate(sequelize) {
-    User.init(
+    Users.init(
       {
         id: {
           type: Sequelize.INTEGER,
@@ -24,7 +24,7 @@ class User extends Sequelize.Model {
         },
         bio: {
           type: Sequelize.STRING(255),
-          allowNull: false,
+          allowNull: true,
         },
         profileImage: {
           type: Sequelize.STRING(255),
@@ -44,14 +44,32 @@ class User extends Sequelize.Model {
         sequelize,
         timestamps: true,
         underscored: false,
-        modelName: "User",
-        tableName: "user",
+        modelName: "Users",
+        tableName: "users",
         paranoid: false,
         charset: "utf8",
         collate: "utf8_general_ci",
       }
     );
   }
+
+  // Follows 모델과의 관계 정의
+  static associate(db) {
+    // 유저를 팔로우하는 다른 유저들
+    Users.belongsToMany(db.Users, {
+      through: db.Follows,
+      as: "Followers",
+      foreignKey: "followingUserId",
+      onDelete: "CASCADE",
+    });
+    // 유저가 팔로우하는 다른 유저들
+    Users.belongsToMany(db.Users, {
+      through: db.Follows,
+      as: "Followings",
+      foreignKey: "followerUserId",
+      onDelete: "CASCADE",
+    });
+  }
 }
 
-module.exports = User;
+module.exports = Users;
