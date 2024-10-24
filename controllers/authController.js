@@ -25,7 +25,7 @@ exports.signup = async (req, res, next) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 크로스 사이트 요청에서 쿠키 전송 방지
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // 크로스 사이트 요청에서 쿠키 전송 방지
     });
     // refreshToken 발급
     const refreshToken = issueRefreshToken();
@@ -64,7 +64,7 @@ exports.login = async (req, res, next) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 크로스 사이트 요청에서 쿠키 전송 방지
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // 크로스 사이트 요청에서 쿠키 전송 방지
     });
     // refreshToken 발급
     const refreshToken = issueRefreshToken();
@@ -123,7 +123,7 @@ exports.reissueAccessToken = async (req, res, next) => {
   res.cookie("accessToken", newAccessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // 프로덕션에서만 HTTPS에서 쿠키 전송
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 크로스 사이트 요청에서 쿠키 전송 방지
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // 크로스 사이트 요청에서 쿠키 전송 방지
   });
   return res.status(200).json({ message: "REISSUE_ACCESS_TOKEN_SUCCESS" });
 };
