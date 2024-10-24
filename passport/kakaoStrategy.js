@@ -2,6 +2,8 @@ const passport = require("passport");
 const KakaoStrategy = require("passport-kakao").Strategy;
 const jwt = require("jsonwebtoken");
 const User = require("../models/users");
+const { redisClient } = require("../config/redis");
+const { isssueAccessToken, issueRefreshToken } = require("../utils/authUtils");
 
 module.exports = () => {
   passport.use(
@@ -33,13 +35,14 @@ module.exports = () => {
               snsId: profile.id, // 카카오 고유 ID
               provider: "kakao", // provider를 kakao로 설정
             });
-
-            const token = jwt.sign(
-              { id: newUser.id, email: newUser.email },
-              process.env.JWT_SECRET,
-              { expiresIn: "1h" }
-            );
-            return done(null, { user: newUser, token }); // JWT 토큰과 함께 반환
+            // JWT 토큰 발급
+            const accessToken = isssueAccessToken({
+              id: newUser.id,
+              email: newUser.email,
+            });
+            const refreshToken = issueRefreshToken();
+            await redisClient.set(String(newUser.id), refreshToken);
+            return done(null, { user: newUser, accessToken }); // JWT 토큰과 함께 반환
           }
         } catch (error) {
           console.error(error);
