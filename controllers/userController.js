@@ -1,11 +1,11 @@
-const Users = require("../models/users");
-const Follows = require("../models/follows");
+const User = require("../models/users");
+const Follow = require("../models/follows");
 const { deleteProfileImage } = require("../middlewares/imageMiddleware");
 
 exports.uploadProfile = async (req, res, next) => {
   try {
     const { userId } = req.query;
-    const user = await Users.findByPk(userId);
+    const user = await User.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: "NOT_FOUND_USER" });
     }
@@ -29,19 +29,18 @@ exports.uploadProfile = async (req, res, next) => {
 exports.getUserProfile = async (req, res, next) => {
   try {
     const userId = req.params.id;
-    console.log("userId", userId);
     // 유저 정보
-    const user = await Users.findOne({
+    const user = await User.findOne({
       where: { id: userId },
       attributes: ["nickname", "bio", "profileImage"],
     });
     if (!user) {
       return res.status(404).json({ message: "USER_NOT_FOUND" });
     }
-    const followersCount = await Follows.count({
+    const followersCount = await Follow.count({
       where: { followingUserId: "userId" },
     });
-    const followingsCount = await Follows.count({
+    const followingsCount = await Follow.count({
       where: { followerUserId: userId },
     });
 
