@@ -127,3 +127,27 @@ exports.reissueAccessToken = async (req, res, next) => {
   });
   return res.status(200).json({ message: "REISSUE_ACCESS_TOKEN_SUCCESS" });
 };
+
+exports.kakaoSignup = async (req, res, next) => {
+  try {
+    const { userId, email, bio } = req.body;
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "USER_NOT_FOUND" });
+    }
+    user.email = email;
+    user.bio = bio;
+    await user.save();
+    return res.status(200).json({
+      message: "USER_UPDATE_SUCCESS",
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};

@@ -1,9 +1,8 @@
 const passport = require("passport");
 const KakaoStrategy = require("passport-kakao").Strategy;
-const jwt = require("jsonwebtoken");
 const User = require("../models/users");
 const { redisClient } = require("../config/redis");
-const { isssueAccessToken, issueRefreshToken } = require("../utils/authUtils");
+const { issueAccessToken, issueRefreshToken } = require("../utils/authUtils");
 
 module.exports = () => {
   passport.use(
@@ -18,15 +17,13 @@ module.exports = () => {
           const exUser = await User.findOne({
             where: { snsId: profile.id, provider: "kakao" },
           });
-
           if (exUser) {
             // 기존 유저가 있으면 JWT 토큰 발급
-            const token = jwt.sign(
-              { id: exUser.id, email: exUser.email },
-              process.env.JWT_SECRET,
-              { expiresIn: "24h" }
-            );
-            return done(null, { user: exUser, token }); // JWT 토큰과 함께 반환
+            const accessToken = issueAccessToken({
+              id: profile.id,
+              email: profile.email,
+            });
+            return done(null, { user: exUser, accessToken, isNew: false }); // JWT 토큰과 함께 반환
           } else {
             // 신규 유저면 회원가입 후 토큰 발급
             const newUser = await User.create({
@@ -34,15 +31,16 @@ module.exports = () => {
               nickname: profile.displayName, // 카카오 닉네임
               snsId: profile.id, // 카카오 고유 ID
               provider: "kakao", // provider를 kakao로 설정
+              password: "", // 비밀번호는 빈 문자열로 설정
             });
             // JWT 토큰 발급
-            const accessToken = isssueAccessToken({
+            const accessToken = issueAccessToken({
               id: newUser.id,
               email: newUser.email,
             });
             const refreshToken = issueRefreshToken();
             await redisClient.set(String(newUser.id), refreshToken);
-            return done(null, { user: newUser, accessToken }); // JWT 토큰과 함께 반환
+            return done(null, { user: newUser, accessToken, isNew: true }); // JWT 토큰과 함께 반환
           }
         } catch (error) {
           console.error(error);
