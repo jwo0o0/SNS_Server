@@ -1,8 +1,8 @@
 const Sequelize = require("sequelize");
 
-class Users extends Sequelize.Model {
+class User extends Sequelize.Model {
   static initiate(sequelize) {
-    Users.init(
+    User.init(
       {
         id: {
           type: Sequelize.INTEGER,
@@ -44,7 +44,7 @@ class Users extends Sequelize.Model {
         sequelize,
         timestamps: true,
         underscored: false,
-        modelName: "Users",
+        modelName: "User",
         tableName: "users",
         paranoid: false,
         charset: "utf8",
@@ -53,23 +53,53 @@ class Users extends Sequelize.Model {
     );
   }
 
-  // Follows 모델과의 관계 정의
   static associate(db) {
+    // Follow 모델과의 관계
     // 유저를 팔로우하는 다른 유저들
-    Users.belongsToMany(db.Users, {
-      through: db.Follows,
+    User.belongsToMany(db.Users, {
+      through: db.Follow,
       as: "Followers",
       foreignKey: "followingUserId",
       onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
     // 유저가 팔로우하는 다른 유저들
-    Users.belongsToMany(db.Users, {
-      through: db.Follows,
+    User.belongsToMany(db.Users, {
+      through: db.Follow,
       as: "Followings",
       foreignKey: "followerUserId",
       onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
+
+    // Feed 모델과의 관계
+    User.hasMany(db.Feed, {
+      foreignKey: "userId",
+      sourceKey: "id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
+
+    // Like 모델과의 관계
+    User.belongsToMany(db.Feed, {
+      through: db.Like,
+      foreignKey: "userId",
+      as: "LikedFeeds",
+    });
+
+    // Comment 모델과의 관계
+    User.hasMany(db.Comment, {
+      foreignKey: "userId",
+      sourceKey: "id",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    });
+    // Poll 모델과의 관계
+    User.hasMany(db.Poll, {
+      foreignKey: "userId",
+      sourceKey: "id",
     });
   }
 }
 
-module.exports = Users;
+module.exports = User;
