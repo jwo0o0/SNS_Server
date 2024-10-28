@@ -15,6 +15,7 @@ const indexRouter = require("./routes");
 const authRouter = require("./routes/auth");
 const imageRouter = require("./routes/image");
 const userRouter = require("./routes/user");
+const feedRouter = require("./routes/feed");
 
 const { sequelize } = require("./models");
 const passportConfig = require("./passport");
@@ -89,6 +90,7 @@ app.use(passport.session());
 app.use("/auth", authRouter);
 app.use("/image", imageRouter);
 app.use("/user", userRouter);
+app.use("/feeds", feedRouter);
 app.use("/", indexRouter);
 
 app.use((req, res, next) => {

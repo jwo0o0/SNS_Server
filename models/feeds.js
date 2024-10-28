@@ -52,7 +52,7 @@ class Feeds extends Sequelize.Model {
           allowNull: false,
           validate: {
             isValidLength(value) {
-              const size = JSON.stringify(value).length;
+              const size = value.length;
               if (size < 2 || size > 5) {
                 throw new Error("투표 항목은 2개에서 5개까지 가능합니다.");
               }

@@ -20,8 +20,8 @@ module.exports = () => {
           if (exUser) {
             // 기존 유저가 있으면 JWT 토큰 발급
             const accessToken = issueAccessToken({
-              id: profile.id,
-              email: profile.email,
+              id: exUser.id,
+              email: exUser.email,
             });
             return done(null, { user: exUser, accessToken, isNew: false }); // JWT 토큰과 함께 반환
           } else {
