@@ -81,33 +81,34 @@ class Feeds extends Sequelize.Model {
     // Users 모델과의 관계 정의
     Feeds.belongsTo(db.Users, {
       foreignKey: "userId",
+      as: "User",
       targetKey: "id",
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     });
-    // Polls 모델과의 관계
-    Feeds.hasOne(db.Polls, {
-      foreignKey: "feedId",
-      as: "poll",
-    });
-    // Like 모델과의 관계
     Feeds.belongsToMany(db.Users, {
       through: db.Likes,
-      foreignKey: "feedId",
       as: "LikedByUsers",
+      foreignKey: "feedId",
+      otherKey: "userId",
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     });
+    // Like 모델과의 관계
     // Comment 모델과의 관계
     Feeds.hasMany(db.Comments, {
       foreignKey: "feedId",
       sourceKey: "id",
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
+      as: "Comments",
     });
     // Poll 모델과의 관계
     Feeds.hasMany(db.Polls, {
       foreignKey: "feedId",
       sourceKey: "id",
       onDelete: "CASCADE",
+      as: "Polls",
     });
   }
 }

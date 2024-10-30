@@ -74,17 +74,24 @@ class Users extends Sequelize.Model {
 
     // Feed 모델과의 관계
     Users.hasMany(db.Feeds, {
+      as: "CreatedFeeds",
       foreignKey: "userId",
       sourceKey: "id",
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     });
 
-    // Like 모델과의 관계
     Users.belongsToMany(db.Feeds, {
       through: db.Likes,
-      foreignKey: "userId",
       as: "LikedFeeds",
+      foreignKey: "userId",
+      otherKey: "feedId",
+    });
+
+    // Like 모델과의 관계
+    Users.hasMany(db.Likes, {
+      as: "UserLikes",
+      foreignKey: "userId",
     });
 
     // Comment 모델과의 관계

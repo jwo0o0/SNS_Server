@@ -23,6 +23,8 @@ module.exports = () => {
               id: exUser.id,
               email: exUser.email,
             });
+            const refreshToken = issueRefreshToken();
+            await redisClient.set(String(exUser.id), refreshToken);
             return done(null, { user: exUser, accessToken, isNew: false }); // JWT 토큰과 함께 반환
           } else {
             // 신규 유저면 회원가입 후 토큰 발급

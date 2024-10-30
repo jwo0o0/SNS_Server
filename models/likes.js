@@ -42,11 +42,11 @@ class Likes extends Sequelize.Model {
   static associate(db) {
     this.belongsTo(db.Users, {
       foreignKey: "userId",
-      as: "user",
+      as: "User",
     });
     this.belongsTo(db.Feeds, {
       foreignKey: "feedId",
-      as: "feed",
+      as: "Feed",
     });
   }
 }
