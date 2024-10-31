@@ -239,3 +239,127 @@ exports.deleteFeed = async (req, res, next) => {
     return next(error);
   }
 };
+
+exports.getAllFeed = async (req, res, next) => {
+  const { page = 1, limit = 10 } = req.query; // 기본값: page 1, limit 10
+  const accessToken = req.cookies?.accessToken;
+  const userId = accessToken ? jwt.decode(accessToken).id : null;
+
+  try {
+    const offset = (page - 1) * limit;
+
+    // 모든 피드 최신순으로 조회
+    const feeds = await Feeds.findAll({
+      offset: offset,
+      limit: parseInt(limit),
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        "id",
+        "userId",
+        "content",
+        "pollContent",
+        "commentCount",
+        "likeCount",
+        "polls",
+        "images",
+        "pollCount",
+        "updatedAt",
+      ],
+      include: [
+        {
+          model: Users,
+          as: "User",
+          attributes: ["nickname", "profileImage"],
+        },
+        {
+          model: Polls,
+          as: "Polls",
+          attributes: ["item", "feedId"],
+        },
+        {
+          model: Comments,
+          as: "Comments",
+          attributes: ["id"],
+        },
+        {
+          model: Users,
+          as: "LikedByUsers",
+          attributes: ["id"],
+          through: {
+            attributes: [],
+          },
+        },
+      ],
+    });
+
+    if (feeds.length === 0) {
+      return res.status(200).json({ hasNextPage: false, feeds: [] });
+    }
+
+    // 각 피드에 대해 추가 정보를 계산
+    const feedData = await Promise.all(
+      feeds.map(async (feed) => {
+        const pollOptions = feed.polls;
+        const pollResults = await Polls.findAll({
+          where: { feedId: feed.id },
+          attributes: [
+            "item",
+            [Sequelize.fn("COUNT", Sequelize.col("item")), "voteCount"],
+          ],
+          group: ["item"],
+          raw: true,
+        });
+
+        const result = pollOptions.map((option, idx) => {
+          const pollResult = pollResults.find((poll) => poll.item === idx);
+          return pollResult ? pollResult.voteCount : 0;
+        });
+
+        const isVoted = userId
+          ? !!(await Polls.findOne({
+              where: {
+                feedId: feed.id,
+                userId: userId,
+              },
+            }))
+          : false;
+
+        const isLiked = userId
+          ? feed.LikedByUsers.some((user) => user.id === userId)
+          : false;
+
+        return {
+          feedId: feed.id,
+          user: {
+            userId: feed.userId,
+            nickname: feed.User.nickname,
+            profileImage: feed.User.profileImage,
+          },
+          content: feed.content,
+          pollContent: feed.pollContent,
+          commentCount: feed.commentCount,
+          likeCount: feed.likeCount,
+          images: feed.images || [],
+          polls: pollOptions,
+          pollCount: feed.pollCount,
+          updatedAt: feed.updatedAt,
+          result: result,
+          isVoted: isVoted,
+          isLiked: isLiked,
+        };
+      })
+    );
+
+    // 다음 페이지 여부 판단
+    const totalFeeds = await Feeds.count();
+    const hasNextPage = page * limit < totalFeeds;
+
+    return res.status(200).json({
+      hasNextPage: hasNextPage,
+      feeds: feedData,
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};

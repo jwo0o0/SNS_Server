@@ -6,9 +6,13 @@ const {
   voteFeed,
   likeFeed,
   deleteFeed,
+  getAllFeed,
 } = require("../controllers/feedController");
 
 const router = express.Router();
+
+// 피드 전체 조회 GET /feeds?page=1&limit=10
+router.get("/", getAllFeed);
 
 // 피드 작성 POST /feeds
 router.post("/", verifyAccessToken, postFeed);
