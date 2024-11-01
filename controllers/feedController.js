@@ -45,7 +45,8 @@ exports.uploadFeedImages = async (req, res, next) => {
 exports.getFeed = async (req, res, next) => {
   const { feedId } = req.params;
   const accessToken = req.cookies?.accessToken;
-  const userId = accessToken ? jwt.decode(accessToken).id : null; // 로그인한 유저의 ID, 비로그인 시 null
+  const decodedToken = accessToken ? jwt.decode(accessToken) : null;
+  const userId = decodedToken ? decodedToken.id : null;
   try {
     const feed = await Feeds.findOne({
       where: { id: feedId },
@@ -243,7 +244,8 @@ exports.deleteFeed = async (req, res, next) => {
 exports.getAllFeed = async (req, res, next) => {
   const { page = 1, limit = 10 } = req.query; // 기본값: page 1, limit 10
   const accessToken = req.cookies?.accessToken;
-  const userId = accessToken ? jwt.decode(accessToken).id : null;
+  const decodedToken = accessToken ? jwt.decode(accessToken) : null;
+  const userId = decodedToken ? decodedToken.id : null;
 
   try {
     const offset = (page - 1) * limit;

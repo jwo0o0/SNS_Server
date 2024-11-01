@@ -65,7 +65,8 @@ exports.getUserProfile = async (req, res, next) => {
 exports.getUserFeeds = async (req, res, next) => {
   const { userId } = req.params;
   const accessToken = req.cookies?.accessToken;
-  const currentUserId = accessToken ? jwt.decode(accessToken).id : null;
+  const decodedToken = accessToken ? jwt.decode(accessToken) : null;
+  const currentUserId = decodedToken ? decodedToken.id : null;
 
   try {
     const feeds = await Feeds.findAll({
