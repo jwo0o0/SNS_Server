@@ -3,12 +3,11 @@ const {
   getUserProfile,
   getUserFeeds,
 } = require("../controllers/userController");
-const { verifyAccessToken } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
-router.get("/profile/:id", verifyAccessToken, getUserProfile);
+router.get("/profile/:id", getUserProfile);
 
-router.get("/:userId/feeds", verifyAccessToken, getUserFeeds);
+router.get("/:userId/feeds", getUserFeeds);
 
 module.exports = router;

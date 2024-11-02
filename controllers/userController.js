@@ -1,6 +1,6 @@
 const Sequelize = require("sequelize");
 const Users = require("../models/users");
-const Follow = require("../models/follows");
+const Follows = require("../models/follows");
 const Feeds = require("../models/feeds");
 const Polls = require("../models/polls");
 const Comments = require("../models/comments");
@@ -32,29 +32,42 @@ exports.uploadProfile = async (req, res, next) => {
 };
 
 exports.getUserProfile = async (req, res, next) => {
+  const accessToken = req.cookies?.accessToken;
+  const decodedToken = accessToken ? jwt.decode(accessToken) : null;
+  const currentUserId = decodedToken ? decodedToken.id : null;
   try {
     const userId = req.params.id;
     // 유저 정보
     const user = await Users.findOne({
       where: { id: userId },
       attributes: ["nickname", "bio", "profileImage"],
+      include: [
+        {
+          model: Users,
+          as: "Followers",
+          attributes: ["id"],
+        },
+        {
+          model: Users,
+          as: "Followings",
+          attributes: ["id"],
+        },
+      ],
     });
     if (!user) {
       return res.status(404).json({ message: "USER_NOT_FOUND" });
     }
-    const followersCount = await Follow.count({
-      where: { followingUserId: "userId" },
-    });
-    const followingsCount = await Follow.count({
-      where: { followerUserId: userId },
-    });
+    const isFollowing = user.Followers.some(
+      (follower) => follower.id === currentUserId
+    );
 
     return res.status(200).json({
       nickname: user.nickname,
       bio: user.bio,
       profileImage: user.profileImage,
-      followers: followersCount,
-      followings: followingsCount,
+      followers: user.Followers.length,
+      followings: user.Followings.length,
+      isFollowing,
     });
   } catch (error) {
     console.error(error);
