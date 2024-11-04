@@ -35,6 +35,10 @@ class Messages extends Sequelize.Model {
           allowNull: false,
           defaultValue: false,
         },
+        image: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
       },
       {
         sequelize,
