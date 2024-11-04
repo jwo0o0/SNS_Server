@@ -19,6 +19,8 @@ const db = {
   Likes: require("./likes"),
   Polls: require("./polls"),
   Follows: require("./follows"),
+  ChatRooms: require("./chatrooms"),
+  Messages: require("./messages"),
 };
 
 Object.keys(db).forEach((modelName) => {

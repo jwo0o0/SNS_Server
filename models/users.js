@@ -106,6 +106,11 @@ class Users extends Sequelize.Model {
       foreignKey: "userId",
       sourceKey: "id",
     });
+    // Messages 모델과의 관계
+    Users.hasMany(db.Messages, {
+      foreignKey: "userId",
+      sourceKey: "id",
+    });
   }
 }
 
