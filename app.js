@@ -9,6 +9,9 @@ const passport = require("passport");
 const logger = require("./logger");
 const cors = require("cors");
 const { redisClient } = require("./config/redis");
+const webSocket = require("./config/socket");
+const cron = require("node-cron");
+const batchMessage = require("./utils/batchMessage");
 dotenv.config();
 
 const indexRouter = require("./routes");
@@ -18,6 +21,7 @@ const userRouter = require("./routes/user");
 const feedRouter = require("./routes/feed");
 const commentRouter = require("./routes/comment");
 const followRouter = require("./routes/follow");
+const chatRouter = require("./routes/chat");
 
 const { sequelize } = require("./models");
 const passportConfig = require("./passport");
@@ -58,6 +62,12 @@ redisClient.on("error", (error) => {
   console.error(error);
 });
 
+cron.schedule("*/5 * * * *", () => {
+  batchMessage()
+    .then(() => console.log("Batch processing completed"))
+    .catch((error) => console.error("Batch processing failed:", error));
+});
+
 if (process.env.NODE_ENV === "production") {
   app.use(morgan("combined"));
 } else {
@@ -95,6 +105,7 @@ app.use("/user", userRouter);
 app.use("/feeds", feedRouter);
 app.use("/comments", commentRouter);
 app.use("/follows", followRouter);
+app.use("/chat", chatRouter);
 app.use("/", indexRouter);
 
 app.use((req, res, next) => {
@@ -113,6 +124,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(app.get("port"), () => {
+const server = app.listen(app.get("port"), () => {
   console.log(app.get("port"), "번 포트에서 대기중");
 });
+
+webSocket(server, app);
