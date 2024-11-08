@@ -1,8 +1,12 @@
 const express = require("express");
 
 const { verifyAccessToken } = require("../middlewares/authMiddleware");
-const { handleUploadProfileImage } = require("../middlewares/imageMiddleware");
+const {
+  handleUploadProfileImage,
+  handleUploadFeedImages,
+} = require("../middlewares/imageMiddleware");
 const { uploadProfile } = require("../controllers/userController");
+const { uploadFeedImages } = require("../controllers/feedController");
 
 const router = express.Router();
 
@@ -15,4 +19,12 @@ router.post(
   uploadProfile
 );
 
+// 피드 이미지 업로드
+// POST /image/feeds?feedId={feedId}
+router.post(
+  "/feeds",
+  verifyAccessToken,
+  handleUploadFeedImages,
+  uploadFeedImages
+);
 module.exports = router;

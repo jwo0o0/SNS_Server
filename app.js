@@ -2,23 +2,43 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const path = require("path");
+const session = require("express-session");
 const nunjucks = require("nunjucks");
 const dotenv = require("dotenv");
 const passport = require("passport");
-//const logger = require("./logger");
+const logger = require("./logger");
 const cors = require("cors");
 const { redisClient } = require("./config/redis");
+const webSocket = require("./config/socket");
+const cron = require("node-cron");
+const batchMessage = require("./utils/batchMessage");
 dotenv.config();
 
 const indexRouter = require("./routes");
 const authRouter = require("./routes/auth");
 const imageRouter = require("./routes/image");
+const userRouter = require("./routes/user");
+const feedRouter = require("./routes/feed");
+const commentRouter = require("./routes/comment");
+const followRouter = require("./routes/follow");
+const chatRouter = require("./routes/chat");
 
 const { sequelize } = require("./models");
 const passportConfig = require("./passport");
 
 const app = express();
 passportConfig(); // 패스포트 설정
+passportConfig();
+passport.serializeUser(function (user, done) {
+  console.log("passport session save: ", user.id);
+  done(null, user.id);
+});
+
+passport.deserializeUser(function (id, done) {
+  console.log("passport session get id: ", id);
+
+  done(null, id);
+});
 app.set("port", process.env.PORT || 8001);
 app.set("view engine", "html");
 nunjucks.configure("views", {
@@ -42,6 +62,12 @@ redisClient.on("error", (error) => {
   console.error(error);
 });
 
+cron.schedule("*/5 * * * *", () => {
+  batchMessage()
+    .then(() => console.log("Batch processing completed"))
+    .catch((error) => console.error("Batch processing failed:", error));
+});
+
 if (process.env.NODE_ENV === "production") {
   app.use(morgan("combined"));
 } else {
@@ -58,11 +84,28 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/img", express.static(path.join(__dirname, "uploads")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(
+  session({
+    resave: false,
+    saveUninitialized: false,
+    secret: process.env.COOKIE_SECRET,
+    cookie: {
+      httpOnly: true,
+      secure: false,
+    },
+  })
+);
 app.use(passport.initialize());
+app.use(passport.session());
 
 app.use("/auth", authRouter);
 app.use("/image", imageRouter);
+app.use("/user", userRouter);
+app.use("/feeds", feedRouter);
+app.use("/comments", commentRouter);
+app.use("/follows", followRouter);
+app.use("/chat", chatRouter);
 app.use("/", indexRouter);
 
 app.use((req, res, next) => {
@@ -81,6 +124,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(app.get("port"), () => {
+const server = app.listen(app.get("port"), () => {
   console.log(app.get("port"), "번 포트에서 대기중");
 });
+
+webSocket(server, app);

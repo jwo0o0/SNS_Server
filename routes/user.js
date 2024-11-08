@@ -1,11 +1,13 @@
 const express = require("express");
-
-const { isLoggedIn } = require("../middlewares");
-const { follow } = require("../controllers/user");
+const {
+  getUserProfile,
+  getUserFeeds,
+} = require("../controllers/userController");
 
 const router = express.Router();
 
-// POST /user/:id/follow
-router.post("/:id/follow", isLoggedIn, follow);
+router.get("/profile/:id", getUserProfile);
+
+router.get("/:userId/feeds", getUserFeeds);
 
 module.exports = router;

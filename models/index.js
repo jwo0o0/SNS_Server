@@ -1,10 +1,10 @@
-const Sequelize = require("sequelize");
-const fs = require("fs");
-const path = require("path");
-const env = process.env.NODE_ENV || "development";
-const config = require("../config/config")[env];
+"use strict";
 
-const db = {};
+const Sequelize = require("sequelize");
+const process = require("process");
+const env = process.env.NODE_ENV || "development";
+const config = require(__dirname + "/../config/config.js")[env];
+
 const sequelize = new Sequelize(
   config.database,
   config.username,
@@ -12,29 +12,30 @@ const sequelize = new Sequelize(
   config
 );
 
-db.sequelize = sequelize;
-
-const basename = path.basename(__filename);
-fs.readdirSync(__dirname) // 현재 폴더의 모든 파일을 조회
-  .filter((file) => {
-    // 숨김 파일, index.js, js 확장자가 아닌 파일 필터링
-    return (
-      file.indexOf(".") !== 0 && file !== basename && file.slice(-3) === ".js"
-    );
-  })
-  .forEach((file) => {
-    // 해당 파일의 모델 불러와서 init
-    const model = require(path.join(__dirname, file));
-    console.log(file, model.name);
-    db[model.name] = model;
-    model.initiate(sequelize);
-  });
+const db = {
+  Users: require("./users"),
+  Feeds: require("./feeds"),
+  Comments: require("./comments"),
+  Likes: require("./likes"),
+  Polls: require("./polls"),
+  Follows: require("./follows"),
+  ChatRooms: require("./chatrooms"),
+  Messages: require("./messages"),
+};
 
 Object.keys(db).forEach((modelName) => {
-  // associate 호출
+  if (db[modelName].initiate) {
+    db[modelName].initiate(sequelize);
+  }
+});
+
+Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
   }
 });
+
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
 
 module.exports = db;

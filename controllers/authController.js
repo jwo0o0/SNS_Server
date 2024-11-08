@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { redisClient } = require("../config/redis");
-const User = require("../models/user");
+const User = require("../models/users");
 const { issueAccessToken, issueRefreshToken } = require("../utils/authUtils");
 
 exports.signup = async (req, res, next) => {
@@ -52,7 +52,7 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email, provider: "local" } });
     if (!user) {
-      return res.status(409).json({ message: "USER_NOT_FOUND" });
+      return res.status(404).json({ message: "USER_NOT_FOUND" });
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -102,7 +102,7 @@ exports.reissueAccessToken = async (req, res, next) => {
     return res.status(401).json({ message: "NO_ACCESS_TOKEN" });
   }
   const decoded = jwt.decode(accessToken);
-  if (document === null) {
+  if (decoded === null) {
     res.status(401).json({ message: "NOT_AUTHORIZED" });
   }
   const userId = decoded.id;
@@ -126,4 +126,28 @@ exports.reissueAccessToken = async (req, res, next) => {
     sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // 크로스 사이트 요청에서 쿠키 전송 방지
   });
   return res.status(200).json({ message: "REISSUE_ACCESS_TOKEN_SUCCESS" });
+};
+
+exports.kakaoSignup = async (req, res, next) => {
+  try {
+    const { userId, email, bio } = req.body;
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "USER_NOT_FOUND" });
+    }
+    user.email = email;
+    user.bio = bio;
+    await user.save();
+    return res.status(200).json({
+      message: "USER_UPDATE_SUCCESS",
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
 };

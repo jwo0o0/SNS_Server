@@ -50,7 +50,31 @@ const handleUploadProfileImage = (req, res, next) => {
   });
 };
 
+// feed 이미지 업로드
+const uploadFeedImages = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.S3_BUCKET_NAME,
+    key: function (req, file, cb) {
+      cb(null, `feed-images/${Date.now()}_${file.originalname}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).array("images");
+
+const handleUploadFeedImages = (req, res, next) => {
+  uploadFeedImages(req, res, (err) => {
+    if (err) {
+      console.log(err);
+      return res.status(400).json({ message: "FILE_UPLOAD_FAIL" });
+    }
+    req.uploadedImages = req.files.map((file) => file.location);
+    next();
+  });
+};
+
 module.exports = {
   handleUploadProfileImage,
   deleteProfileImage,
+  handleUploadFeedImages,
 };

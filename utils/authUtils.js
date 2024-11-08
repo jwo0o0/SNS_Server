@@ -16,5 +16,5 @@ exports.issueAccessToken = ({ id, email }) => {
 exports.issueRefreshToken = () => {
   // JWT 토큰 발급
   // refreshToken은 payload 없이 발급
-  return jwt.sign({}, process.env.JWT_SECRET, { expiresIn: "3d" });
+  return jwt.sign({}, process.env.JWT_SECRET, { expiresIn: "1d" });
 };
