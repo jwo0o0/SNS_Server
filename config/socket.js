@@ -6,7 +6,7 @@ module.exports = (server, app) => {
     path: "/socket.io",
     transports: ["websocket"],
     cors: {
-      origin: "*",
+      origin: ["http://localhost:3000", "https://sns.jwoo.site"],
       methods: ["GET", "POST"],
       credentials: true,
     },
