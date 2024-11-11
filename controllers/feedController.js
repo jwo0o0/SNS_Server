@@ -365,3 +365,261 @@ exports.getAllFeed = async (req, res, next) => {
     return next(error);
   }
 };
+
+exports.getLikedFeeds = async (req, res, next) => {
+  const { page = 1, limit = 5 } = req.query; // 기본값: page 1, limit 5
+  const accessToken = req.cookies?.accessToken;
+  const decodedToken = accessToken ? jwt.decode(accessToken) : null;
+  const userId = decodedToken ? decodedToken.id : null;
+
+  try {
+    const offset = (page - 1) * limit;
+    // 유저가 좋아요한 피드를 최신순으로 조회
+    const feeds = await Feeds.findAll({
+      offset: offset,
+      limit: parseInt(limit),
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        "id",
+        "userId",
+        "content",
+        "pollContent",
+        "commentCount",
+        "likeCount",
+        "polls",
+        "images",
+        "pollCount",
+        "updatedAt",
+      ],
+      include: [
+        {
+          model: Users,
+          as: "User",
+          attributes: ["nickname", "profileImage"],
+        },
+        {
+          model: Polls,
+          as: "Polls",
+          attributes: ["item", "feedId"],
+        },
+        {
+          model: Comments,
+          as: "Comments",
+          attributes: ["id"],
+        },
+        {
+          model: Users,
+          as: "LikedByUsers",
+          attributes: ["id"],
+          through: {
+            attributes: [],
+          },
+          where: { id: userId }, // 좋아요한 유저의 ID 필터링
+        },
+      ],
+    });
+
+    if (feeds.length === 0) {
+      return res.status(200).json({ hasNextPage: false, feeds: [] });
+    }
+
+    // 각 피드에 대해 추가 정보를 계산
+    const feedData = await Promise.all(
+      feeds.map(async (feed) => {
+        const pollOptions = feed.polls;
+        const pollResults = await Polls.findAll({
+          where: { feedId: feed.id },
+          attributes: [
+            "item",
+            [Sequelize.fn("COUNT", Sequelize.col("item")), "voteCount"],
+          ],
+          group: ["item"],
+          raw: true,
+        });
+
+        const result = pollOptions.map((option, idx) => {
+          const pollResult = pollResults.find((poll) => poll.item === idx);
+          return pollResult ? pollResult.voteCount : 0;
+        });
+
+        const isVoted = userId
+          ? !!(await Polls.findOne({
+              where: {
+                feedId: feed.id,
+                userId: userId,
+              },
+            }))
+          : false;
+
+        const isLiked = true; // 해당 피드는 이미 유저가 좋아요한 피드이므로 true로 설정
+
+        return {
+          feedId: feed.id,
+          user: {
+            userId: feed.userId,
+            nickname: feed.User.nickname,
+            profileImage: feed.User.profileImage,
+          },
+          content: feed.content,
+          pollContent: feed.pollContent,
+          commentCount: feed.commentCount,
+          likeCount: feed.likeCount,
+          images: feed.images || [],
+          polls: pollOptions,
+          pollCount: feed.pollCount,
+          updatedAt: feed.updatedAt,
+          result: result,
+          isVoted: isVoted,
+          isLiked: isLiked,
+        };
+      })
+    );
+
+    // 다음 페이지 여부 판단
+    const totalLikedFeeds = await Feeds.count({
+      include: [
+        {
+          model: Users,
+          as: "LikedByUsers",
+          where: { id: userId },
+        },
+      ],
+    });
+    const hasNextPage = page * limit < totalLikedFeeds;
+
+    return res.status(200).json({
+      hasNextPage: hasNextPage,
+      feeds: feedData,
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};
+
+exports.getVotedFeeds = async (req, res, next) => {
+  const { page = 1, limit = 5 } = req.query; // 기본값: page 1, limit 5
+  const accessToken = req.cookies?.accessToken;
+  const decodedToken = accessToken ? jwt.decode(accessToken) : null;
+  const userId = decodedToken ? decodedToken.id : null;
+
+  try {
+    const offset = (page - 1) * limit;
+    // 유저가 투표한 피드를 최신순으로 조회
+    const feeds = await Feeds.findAll({
+      offset: offset,
+      limit: parseInt(limit),
+      order: [["updatedAt", "DESC"]],
+      attributes: [
+        "id",
+        "userId",
+        "content",
+        "pollContent",
+        "commentCount",
+        "likeCount",
+        "polls",
+        "images",
+        "pollCount",
+        "updatedAt",
+      ],
+      include: [
+        {
+          model: Users,
+          as: "User",
+          attributes: ["nickname", "profileImage"],
+        },
+        {
+          model: Polls,
+          as: "Polls",
+          attributes: ["item", "feedId"],
+          where: { userId: userId }, // 유저가 투표한 항목만 필터링
+        },
+        {
+          model: Comments,
+          as: "Comments",
+          attributes: ["id"],
+        },
+        {
+          model: Users,
+          as: "LikedByUsers",
+          attributes: ["id"],
+          through: {
+            attributes: [],
+          },
+        },
+      ],
+      group: ["Feeds.id"], // 중복된 피드를 방지하기 위해 그룹화
+    });
+
+    if (feeds.length === 0) {
+      return res.status(200).json({ hasNextPage: false, feeds: [] });
+    }
+
+    // 각 피드에 대해 추가 정보를 계산
+    const feedData = await Promise.all(
+      feeds.map(async (feed) => {
+        const pollOptions = feed.polls;
+        const pollResults = await Polls.findAll({
+          where: { feedId: feed.id },
+          attributes: [
+            "item",
+            [Sequelize.fn("COUNT", Sequelize.col("item")), "voteCount"],
+          ],
+          group: ["item"],
+          raw: true,
+        });
+
+        const result = pollOptions.map((option, idx) => {
+          const pollResult = pollResults.find((poll) => poll.item === idx);
+          return pollResult ? pollResult.voteCount : 0;
+        });
+
+        const isVoted = true; // 이미 투표한 피드이므로 항상 true로 설정
+        const isLiked = userId
+          ? feed.LikedByUsers.some((user) => user.id === userId)
+          : false;
+
+        return {
+          feedId: feed.id,
+          user: {
+            userId: feed.userId,
+            nickname: feed.User.nickname,
+            profileImage: feed.User.profileImage,
+          },
+          content: feed.content,
+          pollContent: feed.pollContent,
+          commentCount: feed.commentCount,
+          likeCount: feed.likeCount,
+          images: feed.images || [],
+          polls: pollOptions,
+          pollCount: feed.pollCount,
+          updatedAt: feed.updatedAt,
+          result: result,
+          isVoted: isVoted,
+          isLiked: isLiked,
+        };
+      })
+    );
+
+    // 다음 페이지 여부 판단
+    const totalVotedFeeds = await Feeds.count({
+      include: [
+        {
+          model: Polls,
+          as: "Polls",
+          where: { userId: userId },
+        },
+      ],
+      distinct: true,
+    });
+    const hasNextPage = page * limit < totalVotedFeeds;
+
+    return res.status(200).json({
+      hasNextPage: hasNextPage,
+      feeds: feedData,
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};

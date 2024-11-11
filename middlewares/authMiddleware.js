@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 // 인증에 필요한 라우터에 사용
 exports.verifyAccessToken = (req, res, next) => {
   const accessToken = req.cookies.accessToken;
+  console.log("accessToken", accessToken);
   if (!accessToken) {
     return res.status(401).json({ message: "NO_ACCESS_TOKEN" });
   }
