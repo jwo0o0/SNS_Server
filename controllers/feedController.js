@@ -5,6 +5,7 @@ const Polls = require("../models/polls");
 const Comments = require("../models/comments");
 const Likes = require("../models/likes");
 const jwt = require("jsonwebtoken");
+const { deleteFeedImages } = require("../middlewares/imageMiddleware");
 
 exports.postFeed = async (req, res, next) => {
   try {
@@ -234,6 +235,9 @@ exports.deleteFeed = async (req, res, next) => {
       return res.status(404).json({ message: "FEED_NOT_FOUND" });
     }
     await feed.destroy();
+    if (feed.images && feed.images.length > 0) {
+      await deleteFeedImages(feed.images);
+    }
     return res.status(200).json({ message: "FEED_DELETE_SUCCESS" });
   } catch (error) {
     console.error(error);
