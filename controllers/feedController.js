@@ -52,6 +52,7 @@ exports.getFeed = async (req, res, next) => {
     const feed = await Feeds.findOne({
       where: { id: feedId },
       attributes: [
+        "id",
         "userId",
         "content",
         "pollContent",
