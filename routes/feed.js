@@ -6,6 +6,7 @@ const {
   voteFeed,
   likeFeed,
   deleteFeed,
+  patchFeed,
   getAllFeed,
   getLikedFeeds,
   getVotedFeeds,
@@ -36,5 +37,8 @@ router.post("/:feedId/like", verifyAccessToken, likeFeed);
 
 // 피드 삭제 DELETE /feeds/:feedId
 router.delete("/:feedId", verifyAccessToken, deleteFeed);
+
+// 피드 수정 PATCH /feeds/:feedId
+router.patch("/:feedId", verifyAccessToken, patchFeed);
 
 module.exports = router;

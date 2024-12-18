@@ -246,6 +246,33 @@ exports.deleteFeed = async (req, res, next) => {
   }
 };
 
+exports.patchFeed = async (req, res, next) => {
+  const { feedId } = req.params;
+  const userId = req.user.id;
+  try {
+    const feed = await Feeds.findOne({
+      where: {
+        id: feedId,
+        userId: userId,
+      },
+    });
+    if (!feed) {
+      return res.status(404).json({ message: "FEED_NOT_FOUND" });
+    }
+    const { content, pollContent, polls } = req.body;
+    feed.content = content;
+    feed.pollContent = pollContent;
+    await feed.save();
+    return res.status(200).json({
+      message: "FEED_PATCH_SUCCESS",
+      feedId: feed.id,
+    });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};
+
 exports.getAllFeed = async (req, res, next) => {
   const { page = 1, limit = 10 } = req.query; // 기본값: page 1, limit 10
   const accessToken = req.cookies?.accessToken;
