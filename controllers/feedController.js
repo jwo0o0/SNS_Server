@@ -43,6 +43,38 @@ exports.uploadFeedImages = async (req, res, next) => {
   }
 };
 
+exports.patchFeedImages = async (req, res, next) => {
+  const { feedId } = req.params;
+  try {
+    let { imageUrls } = req.body;
+    if (!Array.isArray(imageUrls)) {
+      imageUrls = imageUrls ? [imageUrls] : [];
+    }
+
+    const feed = await Feeds.findByPk(feedId);
+    const existingImages = feed.images;
+
+    // 삭제 대상 이미지
+    const imagesToDelete = existingImages.filter(
+      (img) => !imageUrls.includes(img)
+    );
+    if (imagesToDelete.length > 0) {
+      await deleteFeedImages(imagesToDelete);
+    }
+
+    // 새로 업로드된 이미지
+    const newImages = req.uploadedImages;
+
+    feed.images = [...imageUrls, ...newImages];
+    await feed.save();
+
+    return res.status(200).json({ message: "FEED_IMAGE_UPDATE_SUCCESS" });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};
+
 exports.getFeed = async (req, res, next) => {
   const { feedId } = req.params;
   const accessToken = req.cookies?.accessToken;
@@ -52,6 +84,7 @@ exports.getFeed = async (req, res, next) => {
     const feed = await Feeds.findOne({
       where: { id: feedId },
       attributes: [
+        "id",
         "userId",
         "content",
         "pollContent",
@@ -239,6 +272,33 @@ exports.deleteFeed = async (req, res, next) => {
       await deleteFeedImages(feed.images);
     }
     return res.status(200).json({ message: "FEED_DELETE_SUCCESS" });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};
+
+exports.patchFeed = async (req, res, next) => {
+  const { feedId } = req.params;
+  const userId = req.user.id;
+  try {
+    const feed = await Feeds.findOne({
+      where: {
+        id: feedId,
+        userId: userId,
+      },
+    });
+    if (!feed) {
+      return res.status(404).json({ message: "FEED_NOT_FOUND" });
+    }
+    const { content, pollContent, polls } = req.body;
+    feed.content = content;
+    feed.pollContent = pollContent;
+    await feed.save();
+    return res.status(200).json({
+      message: "FEED_PATCH_SUCCESS",
+      feedId: feed.id,
+    });
   } catch (error) {
     console.error(error);
     return next(error);
