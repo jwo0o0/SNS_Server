@@ -6,7 +6,10 @@ const {
   handleUploadFeedImages,
 } = require("../middlewares/imageMiddleware");
 const { uploadProfile } = require("../controllers/userController");
-const { uploadFeedImages } = require("../controllers/feedController");
+const {
+  uploadFeedImages,
+  patchFeedImages,
+} = require("../controllers/feedController");
 
 const router = express.Router();
 
@@ -28,3 +31,12 @@ router.post(
   uploadFeedImages
 );
 module.exports = router;
+
+// 피드 이미지 업데이트
+// PATCH /image/feeds/:feedId
+router.patch(
+  "/feeds/:feedId",
+  verifyAccessToken,
+  handleUploadFeedImages,
+  patchFeedImages
+);

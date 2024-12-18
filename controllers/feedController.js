@@ -43,6 +43,38 @@ exports.uploadFeedImages = async (req, res, next) => {
   }
 };
 
+exports.patchFeedImages = async (req, res, next) => {
+  const { feedId } = req.params;
+  try {
+    let { imageUrls } = req.body;
+    if (!Array.isArray(imageUrls)) {
+      imageUrls = imageUrls ? [imageUrls] : [];
+    }
+
+    const feed = await Feeds.findByPk(feedId);
+    const existingImages = feed.images;
+
+    // 삭제 대상 이미지
+    const imagesToDelete = existingImages.filter(
+      (img) => !imageUrls.includes(img)
+    );
+    if (imagesToDelete.length > 0) {
+      await deleteFeedImages(imagesToDelete);
+    }
+
+    // 새로 업로드된 이미지
+    const newImages = req.uploadedImages;
+
+    feed.images = [...imageUrls, ...newImages];
+    await feed.save();
+
+    return res.status(200).json({ message: "FEED_IMAGE_UPDATE_SUCCESS" });
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
+};
+
 exports.getFeed = async (req, res, next) => {
   const { feedId } = req.params;
   const accessToken = req.cookies?.accessToken;
